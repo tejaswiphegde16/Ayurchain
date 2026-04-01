@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AyurChain — Botanical Traceability System</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#f5f0e8;--parchment:#ede7d6;--moss:#2d4a30;--moss2:#3d6342;
+  --sage:#6b8f71;--gold:#b5893a;--gold2:#d4a853;
+  --charcoal:#1e1e1e;--muted:#7a7062;--line:rgba(45,74,48,0.12);
+  --red:#c0392b;--green:#27ae60;--amber:#e67e22;
+  --card:#fff;--sidebar-w:240px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--charcoal);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+
+/* LOGIN */
+#screen-login{align-items:center;justify-content:center;background:var(--cream);position:relative;overflow:hidden}
+#screen-login::before{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.login-box{position:relative;z-index:2;background:var(--card);border:1px solid var(--line);padding:3rem 3.2rem;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(45,74,48,.08)}
+.login-logo{font-family:'Cormorant Garant',serif;font-size:2rem;font-weight:600;color:var(--moss);text-align:center;margin-bottom:.3rem}
+.login-logo span{color:var(--gold)}
+.login-sub{text-align:center;font-size:.82rem;color:var(--muted);margin-bottom:2.4rem;letter-spacing:.04em}
+.form-group{margin-bottom:1.2rem}
+.form-group label{display:block;font-size:.74rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--moss);margin-bottom:.4rem}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:.72rem .9rem;border:1px solid var(--line);background:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--charcoal);outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--sage)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.6rem;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--moss);color:var(--cream);width:100%}
+.btn-primary:hover{background:var(--moss2)}
+.btn-secondary{background:transparent;color:var(--moss);border:1px solid var(--moss)}
+.btn-secondary:hover{background:var(--moss);color:var(--cream)}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-gold:hover{background:var(--gold2)}
+.btn-sm{padding:.5rem 1rem;font-size:.76rem}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1.6rem}
+.role-card{border:1px solid var(--line);padding:1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--cream)}
+.role-card:hover,.role-card.selected{border-color:var(--sage);background:var(--parchment)}
+.role-card.selected{border-color:var(--moss)}
+.role-icon{font-size:1.6rem;margin-bottom:.3rem}
+.role-name{font-size:.78rem;font-weight:500;color:var(--moss)}
+
+/* APP LAYOUT */
+#screen-app{flex-direction:row}
+.sidebar{width:var(--sidebar-w);min-height:100vh;background:var(--moss);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50}
+.sidebar-logo{padding:1.6rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.08);font-family:'Cormorant Garant',serif;font-size:1.4rem;font-weight:600;color:#fff}
+.sidebar-logo span{color:var(--gold)}
+.sidebar-role{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:.2rem}
+.sidebar-user{padding:.9rem 1.4rem;background:rgba(0,0,0,.15);font-size:.8rem;color:rgba(255,255,255,.7)}
+.sidebar-user strong{display:block;color:#fff;margin-bottom:.1rem}
+nav.sidebar-nav{flex:1;padding:1rem 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:.8rem;padding:.72rem 1.4rem;font-size:.84rem;color:rgba(255,255,255,.6);cursor:pointer;transition:all .2s;border-left:2px solid transparent}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav-item.active{color:#fff;border-left-color:var(--gold);background:rgba(255,255,255,.08)}
+.nav-item .ni{font-size:1rem;width:20px;text-align:center}
+.sidebar-logout{padding:1rem 1.4rem;border-top:1px solid rgba(255,255,255,.08);font-size:.78rem;color:rgba(255,255,255,.4);cursor:pointer;display:flex;align-items:center;gap:.6rem;transition:color .2s}
+.sidebar-logout:hover{color:#fff}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+.topbar-title{font-family:'Cormorant Garant',serif;font-size:1.4rem;font-weight:600;color:var(--moss)}
+.topbar-meta{font-size:.76rem;color:var(--muted)}
+.content{padding:2rem;flex:1}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+.stat-card{background:var(--card);border:1px solid var(--line);padding:1.4rem;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--gold)}
+.stat-val{font-family:'Cormorant Garant',serif;font-size:2.4rem;font-weight:300;color:var(--moss);line-height:1}
+.stat-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:.3rem}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--line);margin-bottom:1.2rem}
+.card-header{padding:1rem 1.4rem;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Cormorant Garant',serif;font-size:1.1rem;font-weight:600;color:var(--moss)}
+.card-body{padding:1.4rem}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{text-align:left;padding:.6rem 1rem;font-size:.69rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);background:var(--parchment)}
+td{padding:.75rem 1rem;border-bottom:1px solid var(--line);color:var(--charcoal)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--cream)}
+
+/* BADGES */
+.badge{display:inline-block;padding:.2rem .6rem;font-size:.67rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.badge-collected{background:rgba(107,143,113,.15);color:var(--sage)}
+.badge-processing{background:rgba(230,126,34,.15);color:var(--amber)}
+.badge-testing{background:rgba(52,152,219,.15);color:#2980b9}
+.badge-certified{background:rgba(39,174,96,.15);color:var(--green)}
+.badge-formulated{background:rgba(45,74,48,.15);color:var(--moss)}
+.badge-failed{background:rgba(192,57,43,.15);color:var(--red)}
+.badge-pass{background:rgba(39,174,96,.15);color:var(--green)}
+.badge-fail{background:rgba(192,57,43,.15);color:var(--red)}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.form-row.four{grid-template-columns:1fr 1fr 1fr 1fr}
+
+/* GPS */
+.gps-box{border:1px dashed var(--sage);padding:1rem;background:rgba(107,143,113,.05);display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.gps-coords{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--moss)}
+.gps-status{font-size:.78rem;color:var(--muted)}
+
+/* BLOCKCHAIN */
+.block{border:1px solid var(--line);margin-bottom:.8rem;font-family:'DM Mono',monospace;font-size:.72rem}
+.block-header{padding:.5rem 1rem;display:flex;justify-content:space-between;align-items:center;font-size:.7rem;color:#fff}
+.block-body{padding:.8rem 1rem;background:var(--parchment)}
+.block-field{display:flex;gap:.5rem;margin-bottom:.25rem}
+.block-key{color:var(--gold);width:120px;flex-shrink:0}
+.block-val{color:var(--charcoal);word-break:break-all}
+.hash-val{color:var(--sage)}
+
+/* QR */
+.qr-container{display:flex;flex-direction:column;align-items:center;padding:1.4rem;border:1px solid var(--line);background:var(--parchment)}
+.qr-label{font-size:.72rem;color:var(--muted);margin-top:.8rem;text-align:center}
+
+/* ALERTS */
+.alert{padding:.8rem 1rem;margin-bottom:1rem;font-size:.83rem;border-left:3px solid}
+.alert-success{background:rgba(39,174,96,.08);border-color:var(--green);color:var(--green)}
+.alert-error{background:rgba(192,57,43,.08);border-color:var(--red);color:var(--red)}
+.alert-info{background:rgba(107,143,113,.1);border-color:var(--sage);color:var(--moss)}
+
+/* PIPELINE */
+.pipeline-track{display:flex;align-items:flex-start;margin:1.5rem 0}
+.pt-step{flex:1;text-align:center;position:relative}
+.pt-step::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--line);z-index:0}
+.pt-step:last-child::after{display:none}
+.pt-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:var(--cream);margin:0 auto .4rem;position:relative;z-index:1;display:flex;align-items:center;justify-content:center;font-size:.7rem}
+.pt-step.done .pt-dot{background:var(--moss);border-color:var(--moss);color:#fff}
+.pt-step.current .pt-dot{background:var(--gold);border-color:var(--gold);color:#fff}
+.pt-step.done::after{background:var(--moss)}
+.pt-name{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pt-step.done .pt-name{color:var(--moss)}
+.pt-step.current .pt-name{color:var(--gold);font-weight:500}
+
+/* EMPTY */
+.empty{text-align:center;padding:3rem 2rem;color:var(--muted)}
+.empty-icon{font-size:2.5rem;margin-bottom:.8rem}
+.empty-msg{font-size:.9rem}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.block{animation:fadeIn .3s ease}
+
+.demo-text{text-align:center;margin-top:1rem;font-size:.74rem;color:var(--muted)}
+
+@media(max-width:800px){
+  .sidebar{width:60px}
+  .sidebar-logo .sidebar-role,.sidebar-user,.nav-item span,.sidebar-logout span{display:none}
+  .sidebar-logo{padding:1rem .8rem;font-size:1rem}
+  .main{margin-left:60px}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .form-row,.form-row.three,.form-row.four{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">Ayur<span>Chain</span></div>
+    <div class="login-sub">Blockchain Botanical Traceability System</div>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input id="login-name" type="text" placeholder="Enter your full name"/>
+    </div>
+    <div class="form-group">
+      <label>Select Your Role</label>
+      <div class="role-grid">
+        <div class="role-card" data-role="collector" onclick="selectRole(this)"><div class="role-icon">🌿</div><div class="role-name">Field Collector</div></div>
+        <div class="role-card" data-role="processor" onclick="selectRole(this)"><div class="role-icon">⚙️</div><div class="role-name">Processing Unit</div></div>
+        <div class="role-card" data-role="lab" onclick="selectRole(this)"><div class="role-icon">🔬</div><div class="role-name">Lab Tester</div></div>
+        <div class="role-card" data-role="manufacturer" onclick="selectRole(this)"><div class="role-icon">🏭</div><div class="role-name">Manufacturer</div></div>
+      </div>
+    </div>
+    <div id="login-error" class="alert alert-error"></div>
+    <button class="btn btn-primary" onclick="login()">Enter System →</button>
+    <div class="demo-text">Demo system · All data stored in browser session</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" class="screen">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Ayur<span>Chain</span><div class="sidebar-role" id="sb-role"></div></div>
+    <div class="sidebar-user"><strong id="sb-name"></strong><span id="sb-time"></span></div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-logout" onclick="logout()">🚪 <span>Sign Out</span></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-meta" id="topbar-meta"></div>
+    </div>
+    <div class="content" id="app-content"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// API CONFIG
+// ═══════════════════════════════════════
+const API_BASE = 'http://localhost:8000';
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+var S={user:null,role:null,batches:[],chain:[],products:[]};
+var batchNum=4;
+function newId(){return 'BATCH-'+String(batchNum++).padStart(3,'0')}
+function nowTs(){return new Date().toISOString()}
+function agoTs(d){return new Date(Date.now()-d*86400000).toISOString()}
+
+// simple hash
+function fakeHash(s){var h=0;for(var i=0;i<s.length;i++){h=Math.imul(31,h)+s.charCodeAt(i)|0}return Math.abs(h).toString(16).padStart(8,'0').repeat(8).slice(0,64)}
+function addBlock(data){
+  var prev=S.chain[S.chain.length-1];
+  var prevHash=prev?prev.hash:'0'.repeat(64);
+  var t=nowTs();
+  var hash=fakeHash(JSON.stringify(data)+t+Math.random());
+  S.chain.push({index:S.chain.length,ts:t,data:data,prevHash:prevHash,hash:hash});
+}
+
+// Seed demo
+(async function(){
+  var b1={id:'BATCH-001',herbName:'Ashwagandha (Withania somnifera)',collector:'Rajan P.',qty:42,unit:'kg',lat:8.1774,lng:77.4347,notes:'Forest reserve, morning harvest',stage:'certified',collectedAt:agoTs(6),processingLogs:[{stage:'Sun Drying',ts:agoTs(4),by:'Unit A',notes:'3 days sun-dry'},{stage:'Grinding',ts:agoTs(2),by:'Unit A',notes:'Mesh 80 sieve'}],labResults:{heavyMetals:0.4,microbial:120,activeCompound:4.1,passed:true,testedBy:'Dr. Priya S.',testedAt:agoTs(1),coa:'NABL-2024-0041'},productId:null};
+  var b2={id:'BATCH-002',herbName:'Shatavari (Asparagus racemosus)',collector:'Meena K.',qty:28,unit:'kg',lat:11.0168,lng:76.9558,notes:'Root harvest post-monsoon',stage:'processing',collectedAt:agoTs(3),processingLogs:[{stage:'Shade Drying',ts:agoTs(2),by:'Unit B',notes:'2 days shade-dry'}],labResults:null,productId:null};
+  var b3={id:'BATCH-003',herbName:'Brahmi (Bacopa monnieri)',collector:'Arjun T.',qty:15,unit:'kg',lat:9.9252,lng:78.1198,notes:'Wetland collection, certified zone',stage:'testing',collectedAt:agoTs(2),processingLogs:[],labResults:null,productId:null};
+  // Post seed batches to backend
+  try {
+    await fetch(API_BASE + '/batches', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b1)});
+    await fetch(API_BASE + '/batches', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b2)});
+    await fetch(API_BASE + '/batches', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b3)});
+  } catch(e) { console.log('Seed failed:', e); }
+  // Note: Blockchain blocks are added by backend on batch creation
+})();
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+var selRole=null;
+function selectRole(el){document.querySelectorAll('.role-card').forEach(function(c){c.classList.remove('selected')});el.classList.add('selected');selRole=el.dataset.role}
+async function login(){
+  var name=document.getElementById('login-name').value.trim();
+  var err=document.getElementById('login-error');
+  if(!name){err.style.display='block';err.textContent='Please enter your name.';return}
+  if(!selRole){err.style.display='block';err.textContent='Please select a role.';return}
+  err.style.display='none';
+  try {
+    var res = await fetch(API_BASE + '/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:name, role:selRole})});
+    if(!res.ok) throw new Error('Login failed');
+    S.user=name;S.role=selRole;
+    document.getElementById('screen-login').classList.remove('active');
+    document.getElementById('screen-app').classList.add('active');
+    await buildApp();
+  } catch(e) {
+    err.style.display='block';err.textContent='Backend connection failed: ' + e.message;
+  }
+}
+function logout(){
+  S.user=null;S.role=null;selRole=null;
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('screen-login').classList.add('active');
+  document.querySelectorAll('.role-card').forEach(function(c){c.classList.remove('selected')});
+  document.getElementById('login-name').value='';
+  if(window._clockInt) clearInterval(window._clockInt);
+}
+
+// ═══════════════════════════════════════
+// APP BUILDER
+// ═══════════════════════════════════════
+var roleNames={collector:'Field Collector',processor:'Processing Unit',lab:'Lab Tester',manufacturer:'Manufacturer'};
+var roleNavs={
+  collector:[{id:'dashboard',icon:'📊',label:'Dashboard'},{id:'log-collection',icon:'📍',label:'Log Collection'},{id:'my-batches',icon:'📦',label:'My Batches'},{id:'ledger',icon:'🔗',label:'Blockchain Ledger'}],
+  processor:[{id:'dashboard',icon:'📊',label:'Dashboard'},{id:'incoming',icon:'📥',label:'Incoming Batches'},{id:'update-stage',icon:'🔄',label:'Update Stage'},{id:'ledger',icon:'🔗',label:'Blockchain Ledger'}],
+  lab:[{id:'dashboard',icon:'📊',label:'Dashboard'},{id:'pending-tests',icon:'⏳',label:'Pending Tests'},{id:'enter-results',icon:'🧪',label:'Enter Results'},{id:'ledger',icon:'🔗',label:'Blockchain Ledger'}],
+  manufacturer:[{id:'dashboard',icon:'📊',label:'Dashboard'},{id:'certified',icon:'✅',label:'Certified Batches'},{id:'create-product',icon:'🏷️',label:'Create Product'},{id:'products',icon:'📱',label:'Products & QR'},{id:'ledger',icon:'🔗',label:'Blockchain Ledger'}]
+};
+
+async function buildApp(){
+  document.getElementById('sb-role').textContent=roleNames[S.role];
+  document.getElementById('sb-name').textContent=S.user;
+  window._clockInt=setInterval(function(){var el=document.getElementById('sb-time');if(el)el.textContent=new Date().toLocaleTimeString()},1000);
+  // build nav
+  var nav=document.getElementById('sidebar-nav');nav.innerHTML='';
+  roleNavs[S.role].forEach(function(item){
+    var el=document.createElement('div');el.className='nav-item';el.dataset.id=item.id;
+    el.innerHTML='<span class="ni">'+item.icon+'</span><span>'+item.label+'</span>';
+    el.onclick=function(){showPanel(item.id)};nav.appendChild(el);
+  });
+  // Fetch data from backend
+  await fetchData();
+  showPanel('dashboard');
+}
+
+async function fetchData(){
+  try {
+    S.batches = await (await fetch(API_BASE + '/batches')).json();
+    S.products = await (await fetch(API_BASE + '/products')).json();
+    S.chain = await (await fetch(API_BASE + '/chain')).json();
+  } catch(e) { console.log('Fetch failed:', e); S.batches=[]; S.products=[]; S.chain=[]; }
+}
+
+var panelTitles={dashboard:'Dashboard','log-collection':'Log Herb Collection','my-batches':'My Batches',ledger:'Blockchain Ledger',incoming:'Incoming Batches','update-stage':'Update Processing Stage','pending-tests':'Pending Lab Tests','enter-results':'Enter Lab Results',certified:'Certified Batches','create-product':'Create Final Product',products:'Products & QR Codes'};
+
+function showPanel(id){
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.toggle('active',n.dataset.id===id)});
+  document.getElementById('topbar-title').textContent=panelTitles[id]||id;
+  document.getElementById('topbar-meta').textContent=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  var c=document.getElementById('app-content');c.innerHTML='';
+  var fns={dashboard:rDash,'log-collection':rLogColl,'my-batches':rMyBatches,ledger:rLedger,incoming:rIncoming,'update-stage':rUpdateStage,'pending-tests':rPendingTests,'enter-results':rEnterResults,certified:rCertified,'create-product':rCreateProd,products:rProducts};
+  if(fns[id]) fns[id](c);
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function fmt(iso){try{return new Date(iso).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return iso||'—'}}
+function badge(stage){return '<span class="badge badge-'+stage+'">'+stage.toUpperCase()+'</span>'}
+function emptyState(icon,msg){return '<div class="empty"><div class="empty-icon">'+icon+'</div><div class="empty-msg">'+msg+'</div></div>'}
+function batchTable(batches){
+  if(!batches.length) return emptyState('📦','No batches found.');
+  var rows=batches.map(function(b){return '<tr><td><b>'+b.id+'</b></td><td>'+b.herbName+'</td><td>'+b.collector+'</td><td>'+b.qty+b.unit+'</td><td style="font-family:DM Mono,monospace;font-size:.75rem;color:var(--sage)">'+b.lat+'°N, '+b.lng+'°E</td><td>'+fmt(b.collectedAt)+'</td><td>'+badge(b.stage)+'</td></tr>'}).join('');
+  return '<table><thead><tr><th>Batch ID</th><th>Herb</th><th>Collector</th><th>Qty</th><th>Geo-Origin</th><th>Collected</th><th>Stage</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function pipelineTracker(b){
+  var stages=['collected','processing','testing','certified','formulated'];
+  var labels=['Collected','Processing','Lab Test','Certified','Formulated'];
+  var icons=['🌿','⚙️','🔬','✅','🏷️'];
+  var cur=stages.indexOf(b.stage);
+  var steps=stages.map(function(s,i){
+    var cls=i<cur?'done':i===cur?'current':'';
+    return '<div class="pt-step '+cls+'"><div class="pt-dot">'+(i<=cur?icons[i]:'·')+'</div><div class="pt-name">'+labels[i]+'</div></div>';
+  }).join('');
+  return '<div style="margin-bottom:1.5rem"><div style="font-size:.8rem;font-weight:500;color:var(--moss);margin-bottom:.5rem">'+b.id+' — '+b.herbName+'</div><div class="pipeline-track">'+steps+'</div></div>';
+}
+
+// ═══════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════
+function rDash(el){
+  var total=S.batches.length;
+  var cert=S.batches.filter(function(b){return b.stage==='certified'||b.stage==='formulated'}).length;
+  var pipe=S.batches.filter(function(b){return b.stage==='processing'||b.stage==='testing'}).length;
+  var blocks=S.chain.length;
+  el.innerHTML='<div class="stats-row"><div class="stat-card"><div class="stat-val">'+total+'</div><div class="stat-lbl">Total Batches</div></div><div class="stat-card"><div class="stat-val">'+cert+'</div><div class="stat-lbl">Certified</div></div><div class="stat-card"><div class="stat-val">'+pipe+'</div><div class="stat-lbl">In Pipeline</div></div><div class="stat-card"><div class="stat-val">'+blocks+'</div><div class="stat-lbl">Chain Blocks</div></div></div>'
+  +'<div class="card"><div class="card-header"><div class="card-title">Recent Batches</div></div><div class="card-body"><div class="table-wrap">'+batchTable(S.batches.slice().reverse().slice(0,6))+'</div></div></div>'
+  +'<div class="card"><div class="card-header"><div class="card-title">Supply Chain Tracker</div></div><div class="card-body">'+S.batches.map(pipelineTracker).join('')+'</div></div>';
+}
+
+// ═══════════════════════════════════════
+// COLLECTOR — LOG COLLECTION
+// ═══════════════════════════════════════
+var gps={lat:null,lng:null,acc:null};
+function rLogColl(el){
+  gps={lat:null,lng:null,acc:null};
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">🌿 Log New Herb Collection</div></div><div class="card-body"><div id="lc-alert"></div>'
+  +'<div class="form-group"><label>Herb Name &amp; Species</label><input id="f-herb" type="text" placeholder="e.g. Ashwagandha (Withania somnifera)"/></div>'
+  +'<div class="form-row"><div class="form-group"><label>Quantity</label><input id="f-qty" type="number" placeholder="0" min="0"/></div><div class="form-group"><label>Unit</label><select id="f-unit"><option>kg</option><option>g</option><option>bundles</option><option>litres</option></select></div></div>'
+  +'<div class="form-group"><label>GPS Location</label><div class="gps-box"><div><div class="gps-coords" id="gps-disp">No coordinates yet</div><div class="gps-status" id="gps-stat">Press button to auto-capture your GPS location</div></div><button class="btn btn-secondary btn-sm" onclick="captureGPS()" style="margin-left:auto;white-space:nowrap">📍 Capture GPS</button></div></div>'
+  +'<div class="form-row"><div class="form-group"><label>Manual Lat (optional override)</label><input id="f-lat" type="number" step="0.0001" placeholder="e.g. 9.9252"/></div><div class="form-group"><label>Manual Lng (optional override)</label><input id="f-lng" type="number" step="0.0001" placeholder="e.g. 78.1198"/></div></div>'
+  +'<div class="form-group"><label>Collection Notes</label><textarea id="f-notes" rows="3" placeholder="Terrain, weather, sustainability observations, collector ID…"></textarea></div>'
+  +'<button class="btn btn-primary" style="width:auto;padding:.8rem 2rem" onclick="submitColl()">Submit to Blockchain →</button></div></div>';
+}
+function captureGPS(){
+  var disp=document.getElementById('gps-disp'),stat=document.getElementById('gps-stat');
+  disp.textContent='Locating…';
+  function sim(){gps.lat=(8+Math.random()*4).toFixed(4);gps.lng=(76+Math.random()*3).toFixed(4);gps.acc=12;disp.textContent=gps.lat+'°N, '+gps.lng+'°E (simulated)';stat.textContent='Demo coordinates · '+new Date().toLocaleTimeString();}
+  if(!navigator.geolocation){sim();return}
+  navigator.geolocation.getCurrentPosition(function(p){
+    gps.lat=p.coords.latitude.toFixed(6);gps.lng=p.coords.longitude.toFixed(6);gps.acc=Math.round(p.coords.accuracy);
+    disp.textContent=gps.lat+'°N, '+gps.lng+'°E';stat.textContent='Accuracy ±'+gps.acc+'m · '+new Date().toLocaleTimeString();
+  },function(){sim()},{timeout:8000});
+}
+async function submitColl(){
+  var herb=document.getElementById('f-herb').value.trim();
+  var qty=parseFloat(document.getElementById('f-qty').value);
+  var unit=document.getElementById('f-unit').value;
+  var notes=document.getElementById('f-notes').value.trim();
+  var manLat=parseFloat(document.getElementById('f-lat').value);
+  var manLng=parseFloat(document.getElementById('f-lng').value);
+  var lat=(!isNaN(manLat)?manLat:gps.lat);
+  var lng=(!isNaN(manLng)?manLng:gps.lng);
+  var alertEl=document.getElementById('lc-alert');
+  if(!herb||isNaN(qty)||qty<=0){alertEl.innerHTML='<div class="alert alert-error">Please fill in herb name and quantity.</div>';return}
+  if(!lat||!lng){alertEl.innerHTML='<div class="alert alert-error">Please capture GPS or enter coordinates manually.</div>';return}
+  var b={id:newId(),herbName:herb,collector:S.user,qty:qty,unit:unit,lat:parseFloat(lat),lng:parseFloat(lng),notes:notes,stage:'collected',collectedAt:nowTs(),processingLogs:[],labResults:null,productId:null};
+  try {
+    await fetch(API_BASE + '/batches', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)});
+    alertEl.innerHTML='<div class="alert alert-success">✅ Batch <b>'+b.id+'</b> recorded on blockchain! Geo-tag: '+lat+'°N, '+lng+'°E</div>';
+    // Refresh data
+    await fetchData();
+  } catch(e) {
+    alertEl.innerHTML='<div class="alert alert-error">Failed to submit: ' + e.message + '</div>';
+  }
+  document.getElementById('f-herb').value='';document.getElementById('f-qty').value='';document.getElementById('f-notes').value='';document.getElementById('f-lat').value='';document.getElementById('f-lng').value='';
+  gps={lat:null,lng:null,acc:null};document.getElementById('gps-disp').textContent='No coordinates yet';
+}
+
+// ═══════════════════════════════════════
+// COLLECTOR — MY BATCHES
+// ═══════════════════════════════════════
+function rMyBatches(el){
+  var mine=S.batches.filter(function(b){return b.collector===S.user});
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">My Collections ('+mine.length+')</div></div><div class="card-body"><div class="table-wrap">'+batchTable(mine)+'</div></div></div>';
+}
+
+// ═══════════════════════════════════════
+// PROCESSOR — INCOMING
+// ═══════════════════════════════════════
+function rIncoming(el){
+  var inc=S.batches.filter(function(b){return b.stage==='collected'});
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">📥 Batches Awaiting Processing ('+inc.length+')</div></div><div class="card-body"><div class="table-wrap">'+batchTable(inc)+'</div></div></div>';
+}
+function rUpdateStage(el){
+  var eli=S.batches.filter(function(b){return b.stage==='collected'||b.stage==='processing'});
+  var opts=eli.map(function(b){return '<option value="'+b.id+'">'+b.id+' — '+b.herbName+' ('+b.stage+')</option>'}).join('');
+  var logs=S.batches.flatMap(function(b){return b.processingLogs.map(function(l){return '<tr><td><b>'+b.id+'</b></td><td>'+b.herbName+'</td><td>'+l.stage+'</td><td>'+l.by+'</td><td>'+fmt(l.ts)+'</td><td>'+( l.notes||'—')+'</td></tr>'})});
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">⚙️ Update Processing Stage</div></div><div class="card-body"><div id="ps-alert"></div>'
+  +'<div class="form-group"><label>Select Batch</label><select id="p-batch"><option value="">-- select batch --</option>'+opts+'</select></div>'
+  +'<div class="form-row"><div class="form-group"><label>Processing Stage</label><select id="p-stage"><option>Sun Drying</option><option>Shade Drying</option><option>Sorting</option><option>Grinding</option><option>Sieving</option><option>Packaging</option><option>Quality Pre-check</option></select></div>'
+  +'<div class="form-group"><label>Facility / Unit</label><input id="p-unit" type="text" placeholder="e.g. Unit A — Coimbatore"/></div></div>'
+  +'<div class="form-group"><label>Processing Notes</label><textarea id="p-notes" rows="2" placeholder="Method, temperature, moisture readings…"></textarea></div>'
+  +'<button class="btn btn-primary" style="width:auto" onclick="submitProc()">Log Stage to Blockchain →</button></div></div>'
+  +'<div class="card"><div class="card-header"><div class="card-title">Processing Log History</div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Batch</th><th>Herb</th><th>Stage</th><th>By</th><th>Time</th><th>Notes</th></tr></thead><tbody>'+(logs.length?logs.join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1rem">No logs yet</td></tr>')+'</tbody></table></div></div></div>';
+}
+async function submitProc(){
+  var id=document.getElementById('p-batch').value;
+  var stage=document.getElementById('p-stage').value;
+  var unit=document.getElementById('p-unit').value.trim()||S.user;
+  var notes=document.getElementById('p-notes').value.trim();
+  var alertEl=document.getElementById('ps-alert');
+  if(!id){alertEl.innerHTML='<div class="alert alert-error">Please select a batch.</div>';return}
+  var b=S.batches.find(function(x){return x.id===id});
+  b.stage='processing';b.processingLogs.push({stage:stage,ts:nowTs(),by:unit,notes:notes});
+  try {
+    await fetch(API_BASE + '/batches/' + id, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)});
+    alertEl.innerHTML='<div class="alert alert-success">✅ Stage "'+stage+'" logged for '+id+' on blockchain.</div>';
+    await fetchData();
+    showPanel('update-stage');
+  } catch(e) {
+    alertEl.innerHTML='<div class="alert alert-error">Failed to submit: ' + e.message + '</div>';
+  }
+}
+
+// ═══════════════════════════════════════
+// LAB — PENDING TESTS
+// ═══════════════════════════════════════
+function rPendingTests(el){
+  var pend=S.batches.filter(function(b){return b.stage==='processing'||b.stage==='testing'});
+  var done=S.batches.filter(function(b){return b.labResults});
+  var doneRows=done.map(function(b){
+    var r=b.labResults;
+    return '<tr><td><b>'+b.id+'</b></td><td>'+b.herbName+'</td><td>'+r.heavyMetals+' ppm</td><td>'+r.microbial+' CFU/g</td><td>'+r.activeCompound+'%</td><td><span class="badge badge-'+(r.passed?'pass':'fail')+'">'+(r.passed?'PASS':'FAIL')+'</span></td><td>'+r.testedBy+'</td></tr>';
+  }).join('');
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">⏳ Batches Pending Lab Analysis ('+pend.length+')</div></div><div class="card-body"><div class="table-wrap">'+batchTable(pend)+'</div></div></div>'
+  +'<div class="card"><div class="card-header"><div class="card-title">Completed Tests</div></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Batch</th><th>Herb</th><th>Heavy Metals</th><th>Microbial</th><th>Active Cpd</th><th>Result</th><th>Tester</th></tr></thead><tbody>'+(doneRows||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1rem">No tests completed yet</td></tr>')+'</tbody></table></div></div></div>';
+}
+
+function rEnterResults(el){
+  var eli=S.batches.filter(function(b){return b.stage==='processing'||b.stage==='testing'});
+  var opts=eli.map(function(b){return '<option value="'+b.id+'">'+b.id+' — '+b.herbName+'</option>'}).join('');
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">🧪 Enter Lab Test Results</div></div><div class="card-body"><div id="lab-alert"></div>'
+  +'<div class="form-group"><label>Select Batch</label><select id="l-batch" onchange="onBatchSelect()"><option value="">-- select batch --</option>'+opts+'</select></div>'
+  +'<div id="l-info"></div>'
+  +'<div class="form-row three"><div class="form-group"><label>Heavy Metals (ppm)</label><input id="l-hm" type="number" step="0.01" placeholder="e.g. 0.4"/><small style="color:var(--muted);font-size:.72rem">AYUSH limit ≤ 10 ppm</small></div>'
+  +'<div class="form-group"><label>Microbial Count (CFU/g)</label><input id="l-mc" type="number" step="1" placeholder="e.g. 150"/><small style="color:var(--muted);font-size:.72rem">Limit ≤ 10,000 CFU/g</small></div>'
+  +'<div class="form-group"><label>Active Compound (%)</label><input id="l-ac" type="number" step="0.1" placeholder="e.g. 4.1"/><small style="color:var(--muted);font-size:.72rem">Minimum ≥ 2.5%</small></div></div>'
+  +'<div id="l-verdict" style="margin:.5rem 0"></div>'
+  +'<div class="form-group"><label>Certificate No. (COA)</label><input id="l-coa" type="text" placeholder="e.g. NABL-2024-00123"/></div>'
+  +'<div style="display:flex;gap:1rem;flex-wrap:wrap"><button class="btn btn-secondary" onclick="previewVerdict()">Preview Verdict</button><button class="btn btn-primary" style="width:auto" onclick="submitLab()">Submit to Blockchain →</button></div>'
+  +'</div></div>';
+}
+function onBatchSelect(){
+  var id=document.getElementById('l-batch').value;
+  var info=document.getElementById('l-info');
+  if(!id){info.innerHTML='';return}
+  var b=S.batches.find(function(x){return x.id===id});
+  b.stage='testing';
+  info.innerHTML='<div class="alert alert-info">Herb: <b>'+b.herbName+'</b> · Collector: '+b.collector+' · Geo: '+b.lat+'°N, '+b.lng+'°E · Qty: '+b.qty+b.unit+(b.processingLogs.length?' · Stages: '+b.processingLogs.map(function(l){return l.stage}).join(', '):'')+'</div>';
+}
+function previewVerdict(){
+  var h=parseFloat(document.getElementById('l-hm').value);
+  var m=parseFloat(document.getElementById('l-mc').value);
+  var a=parseFloat(document.getElementById('l-ac').value);
+  var v=document.getElementById('l-verdict');
+  if(isNaN(h)||isNaN(m)||isNaN(a)){v.innerHTML='<div class="alert alert-info">Enter all three values to preview verdict.</div>';return}
+  var pass=h<=10&&m<=10000&&a>=2.5;
+  var reasons=[];
+  if(h>10)reasons.push('Heavy metals '+h+' ppm > limit 10');
+  if(m>10000)reasons.push('Microbial '+m+' CFU/g > limit 10,000');
+  if(a<2.5)reasons.push('Active compound '+a+'% < minimum 2.5%');
+  v.innerHTML=pass?'<div class="alert alert-success">✅ PASS — All parameters within AYUSH limits. Batch will be certified.</div>':'<div class="alert alert-error">❌ FAIL — '+reasons.join('; ')+'. Batch will be flagged and held from supply chain.</div>';
+}
+async function submitLab(){
+  var id=document.getElementById('l-batch').value;
+  var h=parseFloat(document.getElementById('l-hm').value);
+  var m=parseFloat(document.getElementById('l-mc').value);
+  var a=parseFloat(document.getElementById('l-ac').value);
+  var coa=document.getElementById('l-coa').value.trim();
+  var alertEl=document.getElementById('lab-alert');
+  if(!id||isNaN(h)||isNaN(m)||isNaN(a)){alertEl.innerHTML='<div class="alert alert-error">Please select a batch and enter all three test values.</div>';return}
+  var pass=h<=10&&m<=10000&&a>=2.5;
+  var b=S.batches.find(function(x){return x.id===id});
+  b.labResults={heavyMetals:h,microbial:m,activeCompound:a,passed:pass,testedBy:S.user,testedAt:nowTs(),coa:coa};
+  b.stage=pass?'certified':'failed';
+  try {
+    await fetch(API_BASE + '/batches/' + id, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)});
+    alertEl.innerHTML='<div class="alert alert-'+(pass?'success':'error')+'">'+(pass?'✅ PASS':'❌ FAIL')+' — Batch '+id+' result written to blockchain.'+(pass?' Now certified and available for formulation.':' Batch flagged and held.')+'</div>';
+    await fetchData();
+    showPanel('enter-results');
+  } catch(e) {
+    alertEl.innerHTML='<div class="alert alert-error">Failed to submit: ' + e.message + '</div>';
+  }
+}
+
+// ═══════════════════════════════════════
+// MANUFACTURER
+// ═══════════════════════════════════════
+function rCertified(el){
+  var cert=S.batches.filter(function(b){return b.stage==='certified'});
+  var rows=cert.map(function(b){return '<tr><td><b>'+b.id+'</b></td><td>'+b.herbName+'</td><td>'+b.qty+b.unit+'</td><td>'+b.collector+'</td><td>'+(b.labResults?b.labResults.activeCompound+'%':'—')+'</td><td style="font-family:DM Mono,monospace;font-size:.75rem;color:var(--sage)">'+b.lat+'°N, '+b.lng+'°E</td><td>'+badge('certified')+'</td></tr>'}).join('');
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">✅ Certified Batches Ready for Formulation ('+cert.length+')</div></div><div class="card-body"><div class="table-wrap">'+(rows?'<table><thead><tr><th>Batch ID</th><th>Herb</th><th>Qty</th><th>Collector</th><th>Active Cpd</th><th>Geo-Origin</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>':emptyState('✅','No certified batches available yet.'))+'</div></div></div>';
+}
+function rCreateProd(el){
+  var cert=S.batches.filter(function(b){return b.stage==='certified'});
+  var opts=cert.map(function(b){return '<option value="'+b.id+'">'+b.id+' — '+b.herbName+' ('+b.qty+b.unit+')</option>'}).join('');
+  el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">🏷️ Create Final Product &amp; Generate QR Code</div></div><div class="card-body"><div id="cp-alert"></div>'
+  +'<div class="form-group"><label>Select Certified Batch</label><select id="cp-batch"><option value="">-- select certified batch --</option>'+opts+'</select></div>'
+  +'<div class="form-row"><div class="form-group"><label>Product Name</label><input id="cp-name" type="text" placeholder="e.g. Ashwagandha Extract Capsules"/></div><div class="form-group"><label>Dosage Form</label><select id="cp-form"><option>Capsules</option><option>Tablets</option><option>Powder</option><option>Liquid Extract</option><option>Oil</option><option>Churna</option></select></div></div>'
+  +'<div class="form-row"><div class="form-group"><label>Batch Size (units)</label><input id="cp-size" type="number" placeholder="e.g. 5000"/></div><div class="form-group"><label>Expiry Date</label><input id="cp-expiry" type="date"/></div></div>'
+  +'<div class="form-group"><label>Manufacturer Name</label><input id="cp-mfr" type="text" value="'+S.user+'" placeholder="Company name"/></div>'
+  +'<button class="btn btn-gold" style="width:auto" onclick="createProd()">🏷️ Create Product &amp; Generate QR →</button></div></div>';
+}
+async function createProd(){
+  var batchId=document.getElementById('cp-batch').value;
+  var name=document.getElementById('cp-name').value.trim();
+  var form=document.getElementById('cp-form').value;
+  var size=document.getElementById('cp-size').value;
+  var expiry=document.getElementById('cp-expiry').value;
+  var mfr=document.getElementById('cp-mfr').value.trim();
+  var alertEl=document.getElementById('cp-alert');
+  if(!batchId||!name||!size){alertEl.innerHTML='<div class="alert alert-error">Please fill Batch, Product Name and Batch Size.</div>';return}
+  var b=S.batches.find(function(x){return x.id===batchId});
+  var pid='PROD-'+Date.now().toString(36).toUpperCase();
+  var qrData='AYURCHAIN\nProduct: '+name+'\nID: '+pid+'\nBatch: '+batchId+'\nHerb: '+b.herbName+'\nGeo: '+b.lat+'N '+b.lng+'E\nActive: '+b.labResults.activeCompound+'%\nMfr: '+mfr+'\nExpiry: '+(expiry||'N/A')+'\nVerify at: ayurchain.in/verify/'+pid;
+  var prod={id:pid,batchId:batchId,herbName:b.herbName,name:name,form:form,size:size,expiry:expiry,mfr:mfr,geo:b.lat+'°N, '+b.lng+'°E',collector:b.collector,active:b.labResults.activeCompound,createdAt:nowTs(),qrData:qrData};
+  try {
+    await fetch(API_BASE + '/products', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(prod)});
+    // Update batch
+    b.stage='formulated';b.productId=pid;
+    await fetch(API_BASE + '/batches/' + batchId, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)});
+    alertEl.innerHTML='<div class="alert alert-success">✅ Product <b>'+pid+'</b> created and QR generated! Recorded on blockchain.</div>';
+    await fetchData();
+    setTimeout(function(){showPanel('products')},900);
+  } catch(e) {
+    alertEl.innerHTML='<div class="alert alert-error">Failed to create product: ' + e.message + '</div>';
+  }
+}
+function rProducts(el){
+  if(!S.products.length){el.innerHTML='<div class="card"><div class="card-body">'+emptyState('📱','No products created yet. Go to Create Product.')+'</div></div>';return}
+  el.innerHTML=S.products.map(function(p){
+    return '<div class="card" style="margin-bottom:1.2rem"><div class="card-header"><div><div class="card-title">'+p.name+'</div><div style="font-size:.75rem;color:var(--muted);margin-top:.2rem">'+p.id+' · Batch: '+p.batchId+'</div></div>'+badge('formulated')+'</div>'
+    +'<div class="card-body" style="display:grid;grid-template-columns:1fr 160px;gap:2rem;align-items:start">'
+    +'<div><div class="form-row four" style="margin-bottom:1rem">'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Herb</div><div style="font-size:.85rem">'+p.herbName+'</div></div>'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Form</div><div style="font-size:.85rem">'+p.form+'</div></div>'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Batch Size</div><div style="font-size:.85rem">'+p.size+' units</div></div>'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Active Cpd</div><div style="font-size:.85rem">'+p.active+'%</div></div>'
+    +'</div><div class="form-row four">'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Geo-Origin</div><div style="font-family:DM Mono,monospace;font-size:.78rem;color:var(--sage)">'+p.geo+'</div></div>'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Collector</div><div style="font-size:.85rem">'+p.collector+'</div></div>'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Expiry</div><div style="font-size:.85rem">'+(p.expiry||'—')+'</div></div>'
+    +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.2rem">Manufacturer</div><div style="font-size:.85rem">'+p.mfr+'</div></div>'
+    +'</div></div>'
+    +'<div class="qr-container"><div id="qr-'+p.id+'"></div><div class="qr-label">Scan to verify<br><b style="font-family:DM Mono">'+p.id+'</b></div></div>'
+    +'</div></div>';
+  }).join('');
+  // render QR codes
+  S.products.forEach(function(p){
+    var el2=document.getElementById('qr-'+p.id);
+    if(el2&&!el2.querySelector('canvas')&&!el2.querySelector('img')){
+      try{new QRCode(el2,{text:p.qrData,width:130,height:130,colorDark:'#2d4a30',colorLight:'#f5f0e8'})}
+      catch(e){el2.textContent='QR N/A'}
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// BLOCKCHAIN LEDGER
+// ═══════════════════════════════════════
+var blockColors={GENESIS:'#b5893a',COLLECTION:'#27ae60',PROCESSING:'#e67e22',LAB_RESULT:'#2980b9',FORMULATION:'#2d4a30'};
+async function rLedger(el){
+  try {
+    var blocks = await (await fetch(API_BASE + '/chain')).json();
+    var html=blocks.reverse().map(function(b){
+      var col=blockColors[b.data.type]||'#888';
+      var fields=Object.entries(b.data).filter(function(e){return e[0]!=='type'}).map(function(e){return '<div class="block-field"><span class="block-key">'+e[0]+'</span><span class="block-val">'+e[1]+'</span></div>'}).join('');
+      return '<div class="block"><div class="block-header" style="background:'+col+'"><span>Block #'+b.index+' &nbsp;·&nbsp; '+b.data.type+'</span><span>'+fmt(b.ts)+'</span></div><div class="block-body">'+fields+'<div class="block-field"><span class="block-key">prevHash</span><span class="block-val hash-val">'+b.prevHash.slice(0,40)+'…</span></div><div class="block-field"><span class="block-key">hash</span><span class="block-val hash-val">'+b.hash.slice(0,40)+'…</span></div></div></div>';
+    }).join('');
+    el.innerHTML='<div class="card"><div class="card-header"><div class="card-title">🔗 Immutable Blockchain Ledger</div><div style="font-size:.74rem;color:var(--muted)">'+blocks.length+' blocks · read-only · newest first</div></div><div class="card-body">'+html+'</div></div>';
+  } catch(e) {
+    el.innerHTML='<div class="alert alert-error">Failed to load ledger: ' + e.message + '</div>';
+  }
+}
+</script>
+</body>
+</html>
